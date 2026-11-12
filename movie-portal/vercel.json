@@ -1,14 +1,13 @@
 {
-  "version": 2,
   "cleanUrls": true,
-  "routes": [
+  "rewrites": [
     {
-      "src": "/admin",
-      "dest": "/admin.html"
+      "source": "/khan-control",
+      "destination": "/admin.html"
     },
     {
-      "src": "/",
-      "dest": "/index.html"
+      "source": "/admin",
+      "destination": "/"
     }
   ]
 }
