@@ -1,107 +1,109 @@
 // ========================================================
-// CineStream - Admin Panel Logic (Movies & Series Support)
-// Dual Engine: Works with Supabase OR Local Storage!
+// CineStream - Admin Control Portal Logic
+// Full Live Sync Engine with Supabase Cloud
 // ========================================================
 
-// Auth Elements
+// Check if user set custom Supabase keys in browser
+const customUrl = localStorage.getItem('cinestream_cfg_supabase_url');
+const customKey = localStorage.getItem('cinestream_cfg_supabase_key');
+
+if (customUrl && customKey && typeof supabase !== 'undefined') {
+  try {
+    supabaseClient = supabase.createClient(customUrl, customKey);
+    console.log('✅ Custom Supabase connected from admin settings!');
+  } catch (e) {
+    console.warn('Failed to connect custom supabase:', e);
+  }
+}
+
+// DOM Elements - Auth
 const loginSection = document.getElementById('loginSection');
 const dashboardSection = document.getElementById('dashboardSection');
 const loginForm = document.getElementById('loginForm');
 const adminPassInput = document.getElementById('adminPassInput');
-const togglePassBtn = document.getElementById('togglePassBtn');
 const loginError = document.getElementById('loginError');
 const logoutBtn = document.getElementById('logoutBtn');
 
-// Status Elements
-const adminSupabaseStatus = document.getElementById('adminSupabaseStatus');
-const statusIndicator = document.getElementById('statusIndicator');
-const statusText = document.getElementById('statusText');
+// DOM Elements - Supabase Settings Drawer
+const dbStatusCard = document.getElementById('dbStatusCard');
+const syncStatusDot = document.getElementById('syncStatusDot');
+const syncStatusText = document.getElementById('syncStatusText');
+const toggleConfigBtn = document.getElementById('toggleConfigBtn');
+const configDrawer = document.getElementById('configDrawer');
+const cfgSupabaseUrl = document.getElementById('cfgSupabaseUrl');
+const cfgSupabaseKey = document.getElementById('cfgSupabaseKey');
+const saveConfigBtn = document.getElementById('saveConfigBtn');
 
-// Form Elements
+// DOM Elements - Form
 const uploadContentForm = document.getElementById('uploadContentForm');
-const typeRadioMovie = document.getElementById('typeRadioMovie');
-const typeRadioSeries = document.getElementById('typeRadioSeries');
-const movieFieldsBox = document.getElementById('movieFieldsBox');
-const seriesFieldsBox = document.getElementById('seriesFieldsBox');
-const submitBtnText = document.getElementById('submitBtnText');
-const uploadSubmitBtn = document.getElementById('uploadSubmitBtn');
-const uploadFeedback = document.getElementById('uploadFeedback');
+const radioMovie = document.getElementById('radioMovie');
+const radioSeries = document.getElementById('radioSeries');
+const boxMovieType = document.getElementById('boxMovieType');
+const boxSeriesType = document.getElementById('boxSeriesType');
 
-// Shared Inputs
-const contentTitle = document.getElementById('contentTitle');
-const contentPosterUrl = document.getElementById('contentPosterUrl');
-const contentCategory = document.getElementById('contentCategory');
-const contentYear = document.getElementById('contentYear');
-const contentRating = document.getElementById('contentRating');
-const contentDesc = document.getElementById('contentDesc');
+const inputTitle = document.getElementById('inputTitle');
+const inputPoster = document.getElementById('inputPoster');
+const movieLinksGroup = document.getElementById('movieLinksGroup');
+const inputMovieLink1 = document.getElementById('inputMovieLink1');
+const inputMovieLink2 = document.getElementById('inputMovieLink2');
+const selectMovieQuality = document.getElementById('selectMovieQuality');
+const inputMovieSize = document.getElementById('inputMovieSize');
 
-// Movie Specific Inputs
-const movieDownloadUrl = document.getElementById('movieDownloadUrl');
-const movieBackupUrl = document.getElementById('movieBackupUrl');
-const movieFileSize = document.getElementById('movieFileSize');
-const movieQuality = document.getElementById('movieQuality');
+const seriesLinksGroup = document.getElementById('seriesLinksGroup');
+const btnAddSeason = document.getElementById('btnAddSeason');
+const seasonsList = document.getElementById('seasonsList');
 
-// Series Specific Elements
-const addSeasonBtn = document.getElementById('addSeasonBtn');
-const seasonsListContainer = document.getElementById('seasonsListContainer');
+const selectCategory = document.getElementById('selectCategory');
+const inputYear = document.getElementById('inputYear');
+const inputRating = document.getElementById('inputRating');
+const inputDescription = document.getElementById('inputDescription');
+const btnPublish = document.getElementById('btnPublish');
+const feedbackMsg = document.getElementById('feedbackMsg');
 
-// Live Preview Elements
-const previewImage = document.getElementById('previewImage');
-const previewPlaceholder = document.getElementById('previewPlaceholder');
-const previewTitle = document.getElementById('previewTitle');
-const previewMeta = document.getElementById('previewMeta');
+// DOM Elements - Preview
+const previewImg = document.getElementById('previewImg');
+const previewNoImg = document.getElementById('previewNoImg');
 const previewTypeBadge = document.getElementById('previewTypeBadge');
+const previewTitleText = document.getElementById('previewTitleText');
+const previewMetaText = document.getElementById('previewMetaText');
 
-// Table Elements
-const moviesTableBody = document.getElementById('moviesTableBody');
-const refreshTableBtn = document.getElementById('refreshTableBtn');
+// DOM Elements - Table
+const tableBody = document.getElementById('tableBody');
+const btnReloadTable = document.getElementById('btnReloadTable');
 
-// Series Seasons State
-let seasonsCount = 0;
+let currentSeasonIndex = 0;
 
-// ================= INITIALIZE =================
+// ================= INIT =================
 document.addEventListener('DOMContentLoaded', () => {
   checkAuth();
   setupAuthEvents();
-  setupContentTypeToggle();
+  setupTypeToggle();
+  setupSeasonsBuilder();
   setupLivePreview();
-  setupUploadForm();
-  checkSupabaseConnection();
+  setupFormSubmit();
+  setupConfigDrawer();
+  updateSyncStatusUI();
 
-  // Add initial season for series
-  addSeasonRow();
+  // Add initial season
+  addSeasonCard();
 });
 
-// ================= AUTHENTICATION =================
+// ================= AUTH =================
 function checkAuth() {
   const isAuth = sessionStorage.getItem('cinestream_admin_auth') === 'true';
   if (isAuth) {
-    showDashboard();
+    loginSection.classList.add('hidden');
+    dashboardSection.classList.remove('hidden');
+    logoutBtn.classList.remove('hidden');
+    loadContentTable();
   } else {
-    showLogin();
+    loginSection.classList.remove('hidden');
+    dashboardSection.classList.add('hidden');
+    logoutBtn.classList.add('hidden');
   }
 }
 
-function showLogin() {
-  loginSection.classList.remove('hidden');
-  dashboardSection.classList.add('hidden');
-  logoutBtn.classList.add('hidden');
-}
-
-function showDashboard() {
-  loginSection.classList.add('hidden');
-  dashboardSection.classList.remove('hidden');
-  logoutBtn.classList.remove('hidden');
-  loadAdminTable();
-}
-
 function setupAuthEvents() {
-  togglePassBtn.addEventListener('click', () => {
-    const isPass = adminPassInput.type === 'password';
-    adminPassInput.type = isPass ? 'text' : 'password';
-    togglePassBtn.innerHTML = isPass ? '<i class="fa-regular fa-eye-slash text-sm"></i>' : '<i class="fa-regular fa-eye text-sm"></i>';
-  });
-
   loginForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const entered = adminPassInput.value.trim();
@@ -110,209 +112,205 @@ function setupAuthEvents() {
     if (entered === expected) {
       sessionStorage.setItem('cinestream_admin_auth', 'true');
       loginError.classList.add('hidden');
-      showDashboard();
+      checkAuth();
     } else {
-      loginError.textContent = 'Ghalat password! Barah-e-karam dobara koshish karein.';
+      loginError.textContent = 'Ghalat password! Default password is "admin123".';
       loginError.classList.remove('hidden');
     }
   });
 
   logoutBtn.addEventListener('click', () => {
     sessionStorage.removeItem('cinestream_admin_auth');
-    showLogin();
+    checkAuth();
   });
 }
 
-// ================= CHECK SUPABASE =================
-function checkSupabaseConnection() {
+// ================= CONFIG DRAWER =================
+function setupConfigDrawer() {
+  toggleConfigBtn.addEventListener('click', () => {
+    configDrawer.classList.toggle('hidden');
+  });
+
+  // Pre-fill inputs
+  cfgSupabaseUrl.value = localStorage.getItem('cinestream_cfg_supabase_url') || CONFIG.SUPABASE_URL || '';
+  cfgSupabaseKey.value = localStorage.getItem('cinestream_cfg_supabase_key') || CONFIG.SUPABASE_ANON_KEY || '';
+
+  saveConfigBtn.addEventListener('click', () => {
+    const url = cfgSupabaseUrl.value.trim();
+    const key = cfgSupabaseKey.value.trim();
+
+    if (!url || !key) {
+      alert('Dono URL aur Key paste karein!');
+      return;
+    }
+
+    localStorage.setItem('cinestream_cfg_supabase_url', url);
+    localStorage.setItem('cinestream_cfg_supabase_key', key);
+
+    try {
+      supabaseClient = supabase.createClient(url, key);
+      configDrawer.classList.add('hidden');
+      updateSyncStatusUI();
+      alert('Kamyabi! Supabase live cloud database se connect ho gaya hai!');
+      loadContentTable();
+    } catch (e) {
+      alert('Connection error: ' + e.message);
+    }
+  });
+}
+
+function updateSyncStatusUI() {
   if (supabaseClient) {
-    adminSupabaseStatus.className = 'mb-6 p-4 rounded-xl border border-emerald-500/30 bg-emerald-950/20 text-emerald-300 flex items-center justify-between text-xs';
-    statusIndicator.className = 'w-3 h-3 rounded-full bg-emerald-500';
-    statusText.textContent = 'Supabase Connected Successfully! Movies & Series live cloud database me save hongi.';
+    dbStatusCard.style.borderLeftColor = '#10b981';
+    syncStatusDot.style.background = '#10b981';
+    syncStatusText.innerHTML = '<strong>✅ Live Cloud Connected:</strong> Jo bhi movie/series yahan upload karenge, poori dunya me live website par foran show hogi!';
   } else {
-    adminSupabaseStatus.className = 'mb-6 p-4 rounded-xl border border-amber-500/30 bg-amber-950/20 text-amber-300 flex items-center justify-between text-xs';
-    statusIndicator.className = 'w-3 h-3 rounded-full bg-amber-500 animate-pulse';
-    statusText.innerHTML = '<strong>Local Demo Mode:</strong> Abhi Supabase keys nahi dali gayin. Nayi movies/series aapke browser ke local storage me save hongi aur frontend par foran dikhein gi!';
+    dbStatusCard.style.borderLeftColor = '#f59e0b';
+    syncStatusDot.style.background = '#f59e0b';
+    syncStatusText.innerHTML = '<strong>⚠️ Local Demo Mode:</strong> Upar "Change Supabase Keys" par click karke apni keys dalein taake website poori dunya me live sync ho!';
   }
 }
 
-// ================= CONTENT TYPE SWITCHER =================
-function setupContentTypeToggle() {
-  const updateTypeView = () => {
-    const isSeries = typeRadioSeries.checked;
-    if (isSeries) {
-      movieFieldsBox.classList.add('hidden');
-      seriesFieldsBox.classList.remove('hidden');
-      submitBtnText.textContent = 'Publish Web Series to Database';
-      
-      previewTypeBadge.textContent = 'SERIES';
-      previewTypeBadge.className = 'absolute top-2 right-2 px-2 py-0.5 rounded text-[10px] font-bold bg-purple-600 text-white uppercase';
+// ================= TYPE TOGGLE =================
+function setupTypeToggle() {
+  radioMovie.addEventListener('change', () => {
+    boxMovieType.style.borderColor = '#e50914';
+    boxMovieType.style.background = 'rgba(229, 9, 20, 0.15)';
+    boxMovieType.style.color = '#fff';
 
-      movieDownloadUrl.removeAttribute('required');
-    } else {
-      movieFieldsBox.classList.remove('hidden');
-      seriesFieldsBox.classList.add('hidden');
-      submitBtnText.textContent = 'Publish Movie to Database';
+    boxSeriesType.style.borderColor = '#1e2738';
+    boxSeriesType.style.background = '#090c14';
+    boxSeriesType.style.color = '#94a3b8';
 
-      previewTypeBadge.textContent = 'MOVIE';
-      previewTypeBadge.className = 'absolute top-2 right-2 px-2 py-0.5 rounded text-[10px] font-bold bg-brand-red text-white uppercase';
+    movieLinksGroup.classList.remove('hidden');
+    seriesLinksGroup.classList.add('hidden');
 
-      movieDownloadUrl.setAttribute('required', 'true');
-    }
-    updatePreviewMeta();
-  };
+    previewTypeBadge.textContent = 'MOVIE';
+    previewTypeBadge.style.background = '#e50914';
+  });
 
-  typeRadioMovie.addEventListener('change', updateTypeView);
-  typeRadioSeries.addEventListener('change', updateTypeView);
+  radioSeries.addEventListener('change', () => {
+    boxSeriesType.style.borderColor = '#8b5cf6';
+    boxSeriesType.style.background = 'rgba(139, 92, 246, 0.15)';
+    boxSeriesType.style.color = '#fff';
+
+    boxMovieType.style.borderColor = '#1e2738';
+    boxMovieType.style.background = '#090c14';
+    boxMovieType.style.color = '#94a3b8';
+
+    movieLinksGroup.classList.add('hidden');
+    seriesLinksGroup.classList.remove('hidden');
+
+    previewTypeBadge.textContent = 'SERIES';
+    previewTypeBadge.style.background = '#8b5cf6';
+  });
 }
 
-// ================= DYNAMIC SEASONS BUILDER =================
-function addSeasonRow(title = '', episodes = '8 Episodes', quality = '1080p', size = '4.5 GB', downloadUrl = '', backupUrl = '') {
-  seasonsCount++;
-  const sNum = seasonsCount;
-  const sTitle = title || `Season ${sNum}`;
+// ================= SEASONS BUILDER =================
+function setupSeasonsBuilder() {
+  btnAddSeason.addEventListener('click', () => {
+    addSeasonCard();
+  });
+}
 
-  const row = document.createElement('div');
-  row.className = 'season-card p-3.5 bg-slate-900 border border-purple-800/30 rounded-xl space-y-3 relative transition';
-  row.id = `seasonRow_${sNum}`;
+function addSeasonCard(title = '', eps = '8 Episodes', quality = '1080p', size = '4.5 GB', url1 = '', url2 = '') {
+  currentSeasonIndex++;
+  const idx = currentSeasonIndex;
+  const sName = title || `Season ${idx}`;
 
-  row.innerHTML = `
-    <div class="flex items-center justify-between border-b border-slate-800 pb-2">
-      <div class="flex items-center gap-2">
-        <span class="w-6 h-6 rounded-lg bg-purple-950 border border-purple-800/50 text-purple-300 font-bold text-xs flex items-center justify-center">
-          ${sNum}
-        </span>
-        <input 
-          type="text" 
-          class="season-title-input bg-transparent font-bold text-white text-xs focus:outline-none border-b border-transparent focus:border-purple-400" 
-          value="${sTitle}" 
-          placeholder="Season Name"
-        />
-      </div>
+  const card = document.createElement('div');
+  card.className = 'season-builder-card';
+  card.id = `seasonItem_${idx}`;
 
-      <button 
-        type="button" 
-        onclick="removeSeasonRow(${sNum})"
-        class="text-xs text-red-400 hover:text-red-300 transition flex items-center gap-1"
-        title="Remove this season"
-      >
-        <i class="fa-solid fa-trash-can"></i>
+  card.innerHTML = `
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.65rem;">
+      <span style="font-size: 0.8rem; font-weight: 800; color: #c084fc;">#${idx} ${sName}</span>
+      <button type="button" onclick="removeSeason(${idx})" style="background: transparent; color: #f87171; font-size: 0.75rem;">
+        ✕ Remove
       </button>
     </div>
 
-    <div class="grid grid-cols-3 gap-2">
+    <div class="grid-3" style="margin-bottom: 0.5rem;">
       <div>
-        <label class="block text-[10px] text-slate-400 font-medium mb-1">Episodes Count</label>
-        <input 
-          type="text" 
-          class="season-episodes-input w-full bg-slate-950 border border-slate-700 rounded-lg py-1 px-2 text-xs text-white" 
-          placeholder="e.g. 8 Episodes" 
-          value="${episodes}"
-        />
+        <label class="admin-label">Season Name</label>
+        <input type="text" class="admin-input s-title" value="${sName}" />
       </div>
       <div>
-        <label class="block text-[10px] text-slate-400 font-medium mb-1">Quality</label>
-        <select class="season-quality-input w-full bg-slate-950 border border-slate-700 rounded-lg py-1 px-2 text-xs text-white">
-          <option value="1080p" ${quality === '1080p' ? 'selected' : ''}>1080p FHD</option>
-          <option value="4K UHD" ${quality === '4K UHD' ? 'selected' : ''}>4K UHD</option>
-          <option value="720p" ${quality === '720p' ? 'selected' : ''}>720p HD</option>
-        </select>
+        <label class="admin-label">Episodes</label>
+        <input type="text" class="admin-input s-eps" value="${eps}" />
       </div>
       <div>
-        <label class="block text-[10px] text-slate-400 font-medium mb-1">Season Size</label>
-        <input 
-          type="text" 
-          class="season-size-input w-full bg-slate-950 border border-slate-700 rounded-lg py-1 px-2 text-xs text-white" 
-          placeholder="e.g. 4.5 GB" 
-          value="${size}"
-        />
+        <label class="admin-label">Size</label>
+        <input type="text" class="admin-input s-size" value="${size}" />
       </div>
     </div>
 
-    <div>
-      <label class="block text-[10px] text-slate-400 font-medium mb-1">Season Download Link (Mega/GDrive/Batch) *</label>
-      <input 
-        type="url" 
-        class="season-url-input w-full bg-slate-950 border border-slate-700 rounded-lg py-1.5 px-2.5 text-xs text-white focus:outline-none focus:border-purple-400" 
-        placeholder="https://mega.nz/... or Google Drive folder link" 
-        value="${downloadUrl}"
-      />
+    <div style="margin-bottom: 0.5rem;">
+      <label class="admin-label">Season Download Link (Mega/GDrive Batch) *</label>
+      <input type="url" class="admin-input s-url" value="${url1}" placeholder="https://mega.nz/... or Google Drive folder" />
     </div>
 
     <div>
-      <label class="block text-[10px] text-slate-400 font-medium mb-1">Backup Link (Optional)</label>
-      <input 
-        type="url" 
-        class="season-backup-input w-full bg-slate-950 border border-slate-700 rounded-lg py-1.5 px-2.5 text-xs text-white focus:outline-none focus:border-purple-400" 
-        placeholder="Optional secondary link" 
-        value="${backupUrl}"
-      />
+      <label class="admin-label">Mirror / Backup Link (Optional)</label>
+      <input type="url" class="admin-input s-backup" value="${url2}" placeholder="Optional backup link" />
     </div>
   `;
 
-  seasonsListContainer.appendChild(row);
+  seasonsList.appendChild(card);
 }
 
-window.removeSeasonRow = function(id) {
-  const row = document.getElementById(`seasonRow_${id}`);
-  if (row) {
-    row.remove();
-  }
+window.removeSeason = function(idx) {
+  const el = document.getElementById(`seasonItem_${idx}`);
+  if (el) el.remove();
 };
-
-addSeasonBtn.addEventListener('click', () => {
-  addSeasonRow();
-});
 
 // ================= LIVE PREVIEW =================
 function setupLivePreview() {
-  contentPosterUrl.addEventListener('input', () => {
-    const poster = contentPosterUrl.value.trim();
-    if (poster) {
-      previewImage.src = poster;
-      previewImage.classList.remove('hidden');
-      previewPlaceholder.classList.add('hidden');
-
-      previewImage.onerror = () => {
-        previewImage.classList.add('hidden');
-        previewPlaceholder.classList.remove('hidden');
+  inputPoster.addEventListener('input', () => {
+    const url = inputPoster.value.trim();
+    if (url) {
+      previewImg.src = url;
+      previewImg.style.display = 'block';
+      previewNoImg.style.display = 'none';
+      previewImg.onerror = () => {
+        previewImg.style.display = 'none';
+        previewNoImg.style.display = 'block';
       };
     } else {
-      previewImage.classList.add('hidden');
-      previewPlaceholder.classList.remove('hidden');
+      previewImg.style.display = 'none';
+      previewNoImg.style.display = 'block';
     }
   });
 
-  contentTitle.addEventListener('input', () => {
-    previewTitle.textContent = contentTitle.value.trim() || 'Title Preview';
+  inputTitle.addEventListener('input', () => {
+    previewTitleText.textContent = inputTitle.value.trim() || 'Movie Title Preview';
   });
 
-  contentYear.addEventListener('input', updatePreviewMeta);
-  contentCategory.addEventListener('change', updatePreviewMeta);
+  inputYear.addEventListener('input', updateMetaPreview);
+  selectCategory.addEventListener('change', updateMetaPreview);
 }
 
-function updatePreviewMeta() {
-  const year = contentYear.value.trim() || '2024';
-  const category = contentCategory.value || 'Action';
-  const isSeries = typeRadioSeries.checked;
-  previewMeta.textContent = `${year} • ${category} ${isSeries ? '• Web Series' : '• Movie'}`;
+function updateMetaPreview() {
+  const y = inputYear.value.trim() || '2024';
+  const c = selectCategory.value || 'Action';
+  previewMetaText.textContent = `${y} • ${c}`;
 }
 
-// ================= FORM SUBMISSION =================
-function setupUploadForm() {
+// ================= SUBMIT =================
+function setupFormSubmit() {
   uploadContentForm.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    const title = contentTitle.value.trim();
-    const poster_url = contentPosterUrl.value.trim();
-    const isSeries = typeRadioSeries.checked;
-    const category = contentCategory.value;
-    const year = contentYear.value.trim() || '2024';
-    const rating = contentRating.value.trim() || '8.0';
-    const description = contentDesc.value.trim();
+    const title = inputTitle.value.trim();
+    const poster_url = inputPoster.value.trim();
+    const isSeries = radioSeries.checked;
+    const category = selectCategory.value;
+    const year = inputYear.value.trim() || '2024';
+    const rating = inputRating.value.trim() || '8.0';
+    const description = inputDescription.value.trim();
 
     if (!title || !poster_url) {
-      showFeedback('Title aur Poster URL lazmi hain!', 'error');
+      showToast('Title aur Poster URL lazmi hain!', 'error');
       return;
     }
 
@@ -329,150 +327,124 @@ function setupUploadForm() {
     };
 
     if (isSeries) {
-      const seasonRows = seasonsListContainer.querySelectorAll('.season-card');
+      const cards = seasonsList.querySelectorAll('.season-builder-card');
       const seasonsData = [];
-      let totalEpisodesCount = 0;
+      let totalEps = 0;
 
-      seasonRows.forEach((row, idx) => {
-        const sTitle = row.querySelector('.season-title-input').value.trim() || `Season ${idx + 1}`;
-        const sEpisodes = row.querySelector('.season-episodes-input').value.trim() || '8 Episodes';
-        const sQuality = row.querySelector('.season-quality-input').value;
-        const sSize = row.querySelector('.season-size-input').value.trim() || '4.5 GB';
-        const sDownloadUrl = row.querySelector('.season-url-input').value.trim();
-        const sBackupUrl = row.querySelector('.season-backup-input').value.trim();
+      cards.forEach((card, i) => {
+        const sTitle = card.querySelector('.s-title').value.trim() || `Season ${i + 1}`;
+        const sEps = card.querySelector('.s-eps').value.trim() || '8 Episodes';
+        const sSize = card.querySelector('.s-size').value.trim() || '4.5 GB';
+        const sUrl = card.querySelector('.s-url').value.trim();
+        const sBackup = card.querySelector('.s-backup').value.trim();
 
-        if (sDownloadUrl) {
+        if (sUrl) {
           seasonsData.push({
-            season_number: idx + 1,
+            season_number: i + 1,
             title: sTitle,
-            episodes: sEpisodes,
-            quality: sQuality,
+            episodes: sEps,
             size: sSize,
-            download_url: sDownloadUrl,
-            download_url_backup: sBackupUrl
+            quality: '1080p',
+            download_url: sUrl,
+            download_url_backup: sBackup
           });
 
-          const numMatch = sEpisodes.match(/\d+/);
-          if (numMatch) {
-            totalEpisodesCount += parseInt(numMatch[0], 10);
-          }
+          const m = sEps.match(/\d+/);
+          if (m) totalEps += parseInt(m[0], 10);
         }
       });
 
       if (seasonsData.length === 0) {
-        showFeedback('Web series ke liye kam az kam ek Season aur uska Download Link lazmi add karein!', 'error');
+        showToast('Kam az kam ek Season aur uska Download Link lazmi dalein!', 'error');
         return;
       }
 
       payload.total_seasons = seasonsData.length;
-      payload.total_episodes = totalEpisodesCount > 0 ? totalEpisodesCount : seasonsData.length * 8;
+      payload.total_episodes = totalEps || seasonsData.length * 8;
       payload.seasons_data = seasonsData;
-      payload.quality = seasonsData[0].quality || '1080p';
+      payload.quality = '1080p';
 
     } else {
-      const download_url = movieDownloadUrl.value.trim();
-      const download_url_backup = movieBackupUrl.value.trim();
-      const file_size = movieFileSize.value.trim() || '1.4 GB';
-      const quality = movieQuality.value || '1080p';
+      const dl1 = inputMovieLink1.value.trim();
+      const dl2 = inputMovieLink2.value.trim();
+      const quality = selectMovieQuality.value || '1080p';
+      const size = inputMovieSize.value.trim() || '1.4 GB';
 
-      if (!download_url) {
-        showFeedback('Movie ka download link lazmi dalein!', 'error');
+      if (!dl1) {
+        showToast('Movie ka primary download link lazmi dalein!', 'error');
         return;
       }
 
-      payload.download_url = download_url;
-      payload.download_url_backup = download_url_backup || null;
-      payload.file_size = file_size;
+      payload.download_url = dl1;
+      payload.download_url_backup = dl2 || null;
       payload.quality = quality;
+      payload.file_size = size;
     }
 
-    // Set Loading UI
-    uploadSubmitBtn.disabled = true;
-    uploadSubmitBtn.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i> <span>Saving...</span>';
+    btnPublish.disabled = true;
+    btnPublish.textContent = 'Publishing...';
 
     try {
       if (supabaseClient) {
-        // Mode 1: Save to Supabase
-        const { data, error } = await supabaseClient
-          .from('movies')
-          .insert([payload])
-          .select();
-
+        // Save to Supabase Cloud
+        const { error } = await supabaseClient.from('movies').insert([payload]);
         if (error) throw error;
-        showFeedback(`Zabardast! "${title}" Supabase database me save ho gayi!`, 'success');
+        showToast(`🎉 "${title}" Supabase me live save ho gayi!`, 'success');
       } else {
-        // Mode 2: Save to Local Storage (Demo / Offline mode)
+        // Fallback to local storage
         let localData = [];
         try {
-          const stored = localStorage.getItem('cinestream_local_content');
-          localData = stored ? JSON.parse(stored) : [];
-        } catch (e) {
-          localData = [];
-        }
+          const s = localStorage.getItem('cinestream_local_content');
+          localData = s ? JSON.parse(s) : [];
+        } catch (e) { localData = []; }
 
         localData.unshift(payload);
         localStorage.setItem('cinestream_local_content', JSON.stringify(localData));
-        showFeedback(`Zabardast! "${title}" upload ho gayi (Local Mode)! Website par foran check karein.`, 'success');
+        showToast(`"${title}" upload ho gayi (Local Mode)!`, 'success');
       }
 
       // Reset form
       uploadContentForm.reset();
-      typeRadioMovie.checked = true;
-      movieFieldsBox.classList.remove('hidden');
-      seriesFieldsBox.classList.add('hidden');
-      previewTypeBadge.textContent = 'MOVIE';
-      previewTypeBadge.className = 'absolute top-2 right-2 px-2 py-0.5 rounded text-[10px] font-bold bg-brand-red text-white uppercase';
+      radioMovie.click();
+      seasonsList.innerHTML = '';
+      currentSeasonIndex = 0;
+      addSeasonCard();
 
-      // Reset seasons container
-      seasonsListContainer.innerHTML = '';
-      seasonsCount = 0;
-      addSeasonRow();
+      previewImg.style.display = 'none';
+      previewNoImg.style.display = 'block';
 
-      // Reset preview
-      previewImage.classList.add('hidden');
-      previewPlaceholder.classList.remove('hidden');
-      previewTitle.textContent = 'Title Preview';
-
-      // Reload Table
-      loadAdminTable();
+      loadContentTable();
 
     } catch (err) {
-      console.error('Upload Error:', err);
-      showFeedback(`Upload fail ho gaya: ${err.message}`, 'error');
+      console.error(err);
+      showToast(`Upload error: ${err.message}`, 'error');
     } finally {
-      uploadSubmitBtn.disabled = false;
-      uploadSubmitBtn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> <span id="submitBtnText">Publish to Database</span>';
+      btnPublish.disabled = false;
+      btnPublish.textContent = 'Publish Content Live';
     }
   });
 
-  if (refreshTableBtn) {
-    refreshTableBtn.addEventListener('click', loadAdminTable);
-  }
+  btnReloadTable.addEventListener('click', loadContentTable);
 }
 
-function showFeedback(msg, type) {
-  uploadFeedback.textContent = msg;
-  uploadFeedback.classList.remove('hidden');
+function showToast(msg, type) {
+  feedbackMsg.textContent = msg;
+  feedbackMsg.classList.remove('hidden');
   if (type === 'success') {
-    uploadFeedback.className = 'p-3 rounded-xl text-xs font-semibold bg-emerald-950/70 text-emerald-300 border border-emerald-500/40';
+    feedbackMsg.style.background = 'rgba(16, 185, 129, 0.2)';
+    feedbackMsg.style.color = '#6ee7b7';
+    feedbackMsg.style.border = '1px solid rgba(16, 185, 129, 0.4)';
   } else {
-    uploadFeedback.className = 'p-3 rounded-xl text-xs font-semibold bg-red-950/70 text-red-300 border border-red-500/40';
+    feedbackMsg.style.background = 'rgba(239, 68, 68, 0.2)';
+    feedbackMsg.style.color = '#fca5a5';
+    feedbackMsg.style.border = '1px solid rgba(239, 68, 68, 0.4)';
   }
-
-  setTimeout(() => {
-    uploadFeedback.classList.add('hidden');
-  }, 6000);
+  setTimeout(() => feedbackMsg.classList.add('hidden'), 5000);
 }
 
-// ================= MANAGE TABLE =================
-async function loadAdminTable() {
-  moviesTableBody.innerHTML = `
-    <tr>
-      <td colspan="6" class="py-6 text-center text-slate-400">
-        <i class="fa-solid fa-spinner animate-spin mr-1"></i> Content load ho raha hai...
-      </td>
-    </tr>
-  `;
+// ================= LOAD TABLE =================
+async function loadContentTable() {
+  tableBody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 2rem; color: #64748b;">Loading content...</td></tr>`;
 
   let items = [];
 
@@ -486,80 +458,45 @@ async function loadAdminTable() {
       if (error) throw error;
       items = data || [];
     } catch (err) {
-      console.error('Table Load Error:', err);
-      moviesTableBody.innerHTML = `
-        <tr>
-          <td colspan="6" class="py-6 text-center text-red-400">
-            Supabase se load karne me masla aaya: ${err.message}
-          </td>
-        </tr>
-      `;
+      tableBody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #f87171; padding: 1.5rem;">Supabase load error: ${err.message}</td></tr>`;
       return;
     }
   } else {
-    // Local Storage
     try {
-      const stored = localStorage.getItem('cinestream_local_content');
-      items = stored ? JSON.parse(stored) : [];
-    } catch (e) {
-      items = [];
-    }
+      const s = localStorage.getItem('cinestream_local_content');
+      items = s ? JSON.parse(s) : [];
+    } catch (e) { items = []; }
   }
 
-  if (!items || items.length === 0) {
-    moviesTableBody.innerHTML = `
-      <tr>
-        <td colspan="6" class="py-8 text-center text-slate-500">
-          Abhi tak koi movie ya series upload nahi hui. Upar diye gaye form se pehla item upload karein!
-        </td>
-      </tr>
-    `;
+  if (items.length === 0) {
+    tableBody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 2rem; color: #64748b;">Abhi koi content nahi hai. Upar se pehla item add karein!</td></tr>`;
     return;
   }
 
-  moviesTableBody.innerHTML = items.map(m => {
+  tableBody.innerHTML = items.map(m => {
     const isSeries = m.content_type === 'series';
-    let seasonsInfo = '';
-
-    if (isSeries) {
-      const sCount = m.total_seasons || (m.seasons_data ? m.seasons_data.length : 1);
-      seasonsInfo = `<span class="text-purple-300 font-semibold"><i class="fa-solid fa-tv text-[10px] mr-1"></i> ${sCount} Seasons</span>`;
-    } else {
-      seasonsInfo = `<span class="text-slate-300">${escapeHTML(m.quality || '1080p')} • ${escapeHTML(m.file_size || '1.4 GB')}</span>`;
-    }
+    const detail = isSeries 
+      ? `<span style="color: #c084fc; font-weight: 700;">${m.total_seasons || 1} Seasons</span>`
+      : `<span style="color: #94a3b8;">${m.quality || '1080p'} • ${m.file_size || '1.4 GB'}</span>`;
 
     return `
-      <tr class="hover:bg-slate-800/40 transition-colors">
-        <td class="py-3 px-4">
-          <img 
-            src="${escapeHTML(m.poster_url)}" 
-            alt="Poster" 
-            class="w-10 h-14 object-cover rounded border border-slate-700 bg-slate-950"
-            onerror="this.src='https://via.placeholder.com/40x56?text=?'"
-          />
+      <tr>
+        <td>
+          <img src="${escapeHTML(m.poster_url)}" style="width: 36px; height: 50px; object-fit: cover; border-radius: 4px; background: #000;" onerror="this.src='https://via.placeholder.com/36x50'" />
         </td>
-        <td class="py-3 px-4 font-bold text-white max-w-[200px] truncate" title="${escapeHTML(m.title)}">
+        <td style="font-weight: 700; color: #fff; max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
           ${escapeHTML(m.title)}
         </td>
-        <td class="py-3 px-4">
-          ${isSeries ? `
-            <span class="px-2 py-0.5 rounded bg-purple-950 border border-purple-800 text-purple-300 text-[10px] font-bold uppercase">
-              Series
-            </span>
-          ` : `
-            <span class="px-2 py-0.5 rounded bg-red-950 border border-red-800 text-red-300 text-[10px] font-bold uppercase">
-              Movie
-            </span>
-          `}
+        <td>
+          <span style="font-size: 0.65rem; font-weight: 800; padding: 0.15rem 0.45rem; border-radius: 4px; background: ${isSeries ? '#8b5cf6' : '#e50914'}; color: #fff;">
+            ${isSeries ? 'SERIES' : 'MOVIE'}
+          </span>
         </td>
-        <td class="py-3 px-4">${seasonsInfo}</td>
-        <td class="py-3 px-4 text-slate-400">${escapeHTML(m.year || '-')}</td>
-        <td class="py-3 px-4 text-right">
-          <button 
-            onclick="deleteItem('${m.id}', '${escapeJS(m.title)}')"
-            class="px-2.5 py-1.5 rounded-lg bg-red-950/60 hover:bg-red-800 text-red-300 hover:text-white border border-red-800/50 transition text-xs font-semibold"
-          >
-            <i class="fa-solid fa-trash-can mr-1"></i> Delete
+        <td>${detail}</td>
+        <td>${escapeHTML(m.year || '-')}</td>
+        <td style="text-align: right;">
+          <button onclick="deleteContent('${m.id}', '${escapeJS(m.title)}')" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #f87171; font-size: 0.75rem; font-weight: 700; padding: 0.25rem 0.6rem; border-radius: 6px;">
+            Delete
           </button>
         </td>
       </tr>
@@ -567,51 +504,34 @@ async function loadAdminTable() {
   }).join('');
 }
 
-// Delete item
-window.deleteItem = async function(id, title) {
-  if (!confirm(`Kya aap waqai "${title}" ko delete karna chahte hain?`)) {
-    return;
-  }
+window.deleteContent = async function(id, title) {
+  if (!confirm(`Kya aap waqai "${title}" ko delete karna chahte hain?`)) return;
 
   if (supabaseClient) {
     try {
-      const { error } = await supabaseClient
-        .from('movies')
-        .delete()
-        .eq('id', id);
-
+      const { error } = await supabaseClient.from('movies').delete().eq('id', id);
       if (error) throw error;
-      showFeedback(`"${title}" database se delete ho gayi.`, 'success');
-      loadAdminTable();
-    } catch (err) {
-      alert(`Delete fail ho gaya: ${err.message}`);
+      showToast(`"${title}" database se delete ho gayi!`, 'success');
+      loadContentTable();
+    } catch (e) {
+      alert('Delete error: ' + e.message);
     }
   } else {
-    // Local storage delete
     try {
-      const stored = localStorage.getItem('cinestream_local_content');
-      let localData = stored ? JSON.parse(stored) : [];
-      localData = localData.filter(item => String(item.id) !== String(id));
-      localStorage.setItem('cinestream_local_content', JSON.stringify(localData));
-      showFeedback(`"${title}" delete ho gayi.`, 'success');
-      loadAdminTable();
-    } catch (err) {
-      alert(`Delete fail ho gaya: ${err.message}`);
-    }
+      const s = localStorage.getItem('cinestream_local_content');
+      let arr = s ? JSON.parse(s) : [];
+      arr = arr.filter(x => String(x.id) !== String(id));
+      localStorage.setItem('cinestream_local_content', JSON.stringify(arr));
+      showToast(`"${title}" delete ho gayi!`, 'success');
+      loadContentTable();
+    } catch (e) { alert(e.message); }
   }
 };
 
-// Helpers
 function escapeHTML(str) {
   if (!str) return '';
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
-
 function escapeJS(str) {
   if (!str) return '';
   return String(str).replace(/'/g, "\\'");

@@ -1,32 +1,31 @@
 // ========================================================
-// Supabase Configuration
+// CineStream - Central Configuration
 // ========================================================
-// Yahan aapko apna Supabase Project URL aur Anon Key daalna hai.
-// Supabase Dashboard -> Project Settings -> API me yeh dono milenge.
 
 const CONFIG = {
-  // Apna Supabase URL yahan paste karein (Example: 'https://xyzabcdef.supabase.co')
+  // Option A: Yahan apni Supabase details paste karein (Vercel ke liye)
   SUPABASE_URL: '',
-
-  // Apna Supabase Anon/Public Key yahan paste karein
   SUPABASE_ANON_KEY: '',
 
-  // Admin Panel ka Password (aap isko apni marzi se change kar sakte hain)
+  // Admin Portal Password (Aap isko apni marzi se change kar sakte hain)
   ADMIN_PASSWORD: 'admin123',
 
-  // Site Info
+  // Site Metadata
   SITE_NAME: 'CineStream',
-  SITE_TAGLINE: 'Download Free HD Movies & Series'
+  SITE_TAGLINE: 'Watch & Download Free HD Movies and TV Web Series'
 };
 
-// Supabase Client initialize karein (agar keys mojood hon)
+// Supabase Connection Manager (Checks both config.js and Admin Panel UI)
 let supabaseClient = null;
 
-if (typeof supabase !== 'undefined' && CONFIG.SUPABASE_URL && CONFIG.SUPABASE_ANON_KEY) {
+const activeSupabaseUrl = CONFIG.SUPABASE_URL || (typeof localStorage !== 'undefined' && localStorage.getItem('cinestream_cfg_supabase_url'));
+const activeSupabaseKey = CONFIG.SUPABASE_ANON_KEY || (typeof localStorage !== 'undefined' && localStorage.getItem('cinestream_cfg_supabase_key'));
+
+if (typeof supabase !== 'undefined' && activeSupabaseUrl && activeSupabaseKey) {
   try {
-    supabaseClient = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
-    console.log('✅ Supabase connected successfully!');
+    supabaseClient = supabase.createClient(activeSupabaseUrl, activeSupabaseKey);
+    console.log('✅ Supabase Live Cloud Database Connected!');
   } catch (err) {
-    console.error('❌ Supabase connection error:', err);
+    console.error('❌ Supabase client initialization error:', err);
   }
 }
