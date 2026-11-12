@@ -1,0 +1,276 @@
+/* ========================================================
+   CineStream - Production Standalone Stylesheet (100% Reliable)
+   No external Tailwind runtime needed - works on every network & browser!
+======================================================== */
+
+:root {
+  --bg-main: #0b0f19;
+  --bg-surface: #0f172a;
+  --bg-card: #131b2e;
+  --bg-hover: #1e293b;
+  --brand-red: #e50914;
+  --brand-red-hover: #f40612;
+  --brand-purple: #8b5cf6;
+  --brand-purple-hover: #7c3aed;
+  --border-color: #1e293b;
+  --border-light: #334155;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-family: var(--font-family);
+  background-color: var(--bg-main);
+  color: var(--text-primary);
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bg-main);
+  color: var(--text-primary);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+button, input, select, textarea {
+  font-family: inherit;
+}
+
+/* ================= HEADER / NAVBAR ================= */
+header.glass {
+  background: rgba(15, 23, 42, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-color);
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+
+.max-w-7xl {
+  max-width: 1280px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+@media (min-width: 640px) {
+  .max-w-7xl { padding-left: 1.5rem; padding-right: 1.5rem; }
+}
+@media (min-width: 1024px) {
+  .max-w-7xl { padding-left: 2rem; padding-right: 2rem; }
+}
+
+header .max-w-7xl {
+  height: 5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+/* ================= HERO SECTION ================= */
+.hero-section {
+  position: relative;
+  background: linear-gradient(180deg, #0f172a 0%, #070a12 100%);
+  padding: 2.5rem 0 3rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.hero-title {
+  font-size: 2.25rem;
+  font-weight: 800;
+  line-height: 1.15;
+  color: #fff;
+  letter-spacing: -0.02em;
+}
+
+@media (min-width: 640px) {
+  .hero-title { font-size: 3.25rem; }
+}
+
+/* ================= TYPE SELECTOR & PILLS ================= */
+.type-btn {
+  padding: 0.5rem 1.25rem;
+  border-radius: 0.75rem;
+  font-size: 0.825rem;
+  font-weight: 700;
+  background: transparent;
+  color: var(--text-muted);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s;
+}
+
+.type-btn:hover {
+  color: #fff;
+  background: var(--bg-hover);
+}
+
+.type-btn.active {
+  background: var(--brand-red);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(229, 9, 20, 0.35);
+}
+
+.cat-pill {
+  padding: 0.4rem 1rem;
+  border-radius: 9999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.cat-pill:hover {
+  background: var(--bg-hover);
+  color: #fff;
+}
+
+.cat-pill.active {
+  background: #334155;
+  color: #fff;
+  border-color: #475569;
+}
+
+/* ================= GRID & CARDS ================= */
+#movieGrid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 1rem !important;
+}
+
+@media (min-width: 640px) {
+  #movieGrid { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 1.25rem !important; }
+}
+@media (min-width: 768px) {
+  #movieGrid { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+}
+@media (min-width: 1024px) {
+  #movieGrid { grid-template-columns: repeat(5, minmax(0, 1fr)) !important; }
+}
+@media (min-width: 1280px) {
+  #movieGrid { grid-template-columns: repeat(6, minmax(0, 1fr)) !important; }
+}
+
+.poster-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 0.75rem;
+  overflow: hidden;
+  display: flex !important;
+  flex-direction: column !important;
+  cursor: pointer;
+  position: relative;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.poster-card:hover {
+  transform: translateY(-6px);
+  border-color: #334155;
+  box-shadow: 0 16px 25px -5px rgba(0, 0, 0, 0.5), 0 0 15px rgba(229, 9, 20, 0.2);
+}
+
+/* Fix for Aspect Ratio & Images expanding */
+.aspect-\[2\/3\], [class*="aspect-"] {
+  aspect-ratio: 2 / 3 !important;
+  width: 100% !important;
+  height: auto !important;
+  max-height: 380px !important;
+  position: relative !important;
+  overflow: hidden !important;
+  background: #050811 !important;
+}
+
+.poster-card img {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  object-fit: cover !important;
+  display: block !important;
+  transition: transform 0.3s ease;
+}
+
+.poster-card:hover img {
+  transform: scale(1.05);
+}
+
+/* ================= MODAL ================= */
+#movieModal {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 50 !important;
+  background: rgba(0, 0, 0, 0.85) !important;
+  backdrop-filter: blur(8px) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 1rem !important;
+}
+
+#movieModal.hidden {
+  display: none !important;
+}
+
+#modalPoster {
+  max-height: 440px !important;
+  object-fit: cover !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* ================= INPUTS & FORMS ================= */
+input, select, textarea {
+  background-color: #050811 !important;
+  border: 1px solid #334155 !important;
+  color: #fff !important;
+  border-radius: 0.75rem !important;
+}
+
+input:focus, select:focus, textarea:focus {
+  outline: none !important;
+  border-color: var(--brand-red) !important;
+  box-shadow: 0 0 0 1px var(--brand-red) !important;
+}
+
+/* ================= UTILITY CLASSES ================= */
+.hidden { display: none !important; }
+.flex { display: flex !important; }
+.grid { display: grid !important; }
+.text-center { text-align: center; }
+.w-full { width: 100%; }
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: #0b0f19; }
+::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #e50914; }
