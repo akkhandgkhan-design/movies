@@ -92,6 +92,20 @@
       padding: 1rem;
       margin-bottom: 0.75rem;
     }
+    /* File Dropzone */
+    .file-dropzone {
+      border: 2px dashed #2a374f;
+      border-radius: 12px;
+      padding: 1.5rem;
+      text-align: center;
+      cursor: pointer;
+      background: #080b12;
+      transition: all 0.2s ease;
+    }
+    .file-dropzone:hover, .file-dropzone.dragover {
+      border-color: #e50914;
+      background: rgba(229, 9, 20, 0.05);
+    }
     /* Admin Table */
     .admin-table {
       width: 100%;
@@ -140,24 +154,23 @@
     </div>
   </header>
 
-  <!-- ================= LOGIN SCREEN ================= -->
+  <!-- ================= LOGIN SCREEN (ENCRYPTED GATEWAY) ================= -->
   <div id="loginSection" style="flex: 1; display: flex; align-items: center; justify-content: center; padding: 1.5rem;">
-    <div style="max-width: 26rem; width: 100%; background: #0f1523; border: 1px solid #1e2738; border-radius: 16px; padding: 2rem; box-shadow: 0 20px 40px rgba(0,0,0,0.7); text-align: center;">
+    <div style="max-width: 26rem; width: 100%; background: #0f1523; border: 1px solid #1e2738; border-radius: 16px; padding: 2.25rem; box-shadow: 0 20px 40px rgba(0,0,0,0.7); text-align: center;">
       <div style="width: 3.5rem; height: 3.5rem; border-radius: 14px; background: rgba(229, 9, 20, 0.15); border: 1px solid rgba(229, 9, 20, 0.4); color: #e50914; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem; font-size: 1.5rem;">
         🔒
       </div>
-      <h2 style="font-size: 1.35rem; font-weight: 800; color: #fff;">Admin Authentication</h2>
-      <p style="color: #64748b; font-size: 0.8rem; margin: 0.35rem 0 1.5rem;">Enter password to manage movies & web series.</p>
+      <h2 style="font-size: 1.35rem; font-weight: 800; color: #fff;">Authorized Admin Only</h2>
+      <p style="color: #64748b; font-size: 0.8rem; margin: 0.35rem 0 1.5rem;">Enter secure master key to access panel.</p>
 
       <form id="loginForm">
         <div style="text-align: left; margin-bottom: 1rem;">
-          <label class="admin-label">Password</label>
-          <input type="password" id="adminPassInput" class="admin-input" placeholder="Default password is admin123" required />
+          <label class="admin-label">Master Password</label>
+          <input type="password" id="adminPassInput" class="admin-input" placeholder="••••••••••••••••" required />
         </div>
         <p id="loginError" class="hidden" style="color: #f87171; font-size: 0.75rem; margin-bottom: 1rem; font-weight: 600;"></p>
-        <button type="submit" class="btn-submit-action">Access Dashboard</button>
+        <button type="submit" class="btn-submit-action">Unlock Portal</button>
       </form>
-      <p style="font-size: 0.7rem; color: #475569; margin-top: 1rem;">Default password: <code style="color: #f59e0b;">admin123</code></p>
     </div>
   </div>
 
@@ -166,7 +179,7 @@
 
     <!-- SUPABASE LIVE SYNC STATUS & SETTINGS CARD -->
     <div class="admin-card" id="dbStatusCard" style="border-left: 4px solid #10b981;">
-      <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: gap; margin-bottom: 0.75rem;">
+      <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 0.75rem;">
         <div>
           <h3 style="font-size: 1rem; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 0.5rem;">
             <span id="syncStatusDot" style="width: 8px; height: 8px; border-radius: 50%; background: #10b981; display: inline-block;"></span>
@@ -181,7 +194,7 @@
         </button>
       </div>
 
-      <!-- Quick Supabase Key Setup Drawer (Hidden by default if configured) -->
+      <!-- Quick Supabase Key Setup Drawer -->
       <div id="configDrawer" class="hidden" style="background: #090c14; border: 1px solid #1e2738; border-radius: 10px; padding: 1rem; margin-top: 1rem;">
         <h4 style="font-size: 0.85rem; font-weight: 700; color: #fff; margin-bottom: 0.75rem;">Paste Supabase Project Details:</h4>
         <div class="grid-2">
@@ -194,7 +207,7 @@
             <input type="text" id="cfgSupabaseKey" class="admin-input" placeholder="eyJhbGciOi..." />
           </div>
         </div>
-        <div style="margin-top: 0.75rem; display: flex; gap: 0.5rem;">
+        <div style="margin-top: 0.75rem;">
           <button id="saveConfigBtn" style="padding: 0.5rem 1rem; background: #10b981; color: #fff; font-size: 0.8rem; font-weight: 800; border-radius: 6px;">
             Save & Connect Live
           </button>
@@ -211,7 +224,7 @@
           Upload Movie or Web Series
         </h3>
         <p style="font-size: 0.75rem; color: #64748b; margin-bottom: 1.25rem;">
-          Select type, fill in the poster and download links, and click publish.
+          Direct image upload from your PC or phone (No URL needed).
         </p>
 
         <form id="uploadContentForm">
@@ -241,10 +254,32 @@
             <input type="text" id="inputTitle" class="admin-input" placeholder="e.g. Stranger Things or Interstellar" required />
           </div>
 
-          <!-- Poster URL -->
+          <!-- DIRECT POSTER IMAGE UPLOAD (NO URL REQUIRED!) -->
           <div class="admin-form-group">
-            <label class="admin-label">Poster Image URL *</label>
-            <input type="url" id="inputPoster" class="admin-input" placeholder="https://example.com/poster.jpg (Right-click any image and copy address)" required />
+            <label class="admin-label">Upload Poster Image (Direct from Device) *</label>
+            <div class="file-dropzone" id="dropzoneBox">
+              <input type="file" id="posterFileInput" accept="image/*" style="display: none;" />
+              
+              <div id="dropzonePlaceholder">
+                <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#e50914" stroke-width="2" style="margin: 0 auto 0.5rem; display: block;">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="17 8 12 3 7 8"></polyline>
+                  <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+                <div style="font-size: 0.85rem; font-weight: 800; color: #fff;">
+                  Click here to Choose Poster Image
+                </div>
+                <div style="font-size: 0.7rem; color: #64748b; margin-top: 0.25rem;">
+                  JPG, PNG, WEBP (Direct upload from your phone or laptop)
+                </div>
+              </div>
+
+              <div id="dropzoneSelected" class="hidden" style="color: #10b981; font-size: 0.8rem; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                <span>✓ Poster Image Selected:</span>
+                <span id="dropzoneFileName" style="color: #fff; font-weight: 600;"></span>
+                <span style="font-size: 0.7rem; color: #94a3b8; text-decoration: underline;">(Click to change)</span>
+              </div>
+            </div>
           </div>
 
           <!-- ================= MOVIE LINKS ================= -->
@@ -341,7 +376,7 @@
 
           <div style="aspect-ratio: 2/3; max-width: 220px; margin: 0 auto; background: #090c14; border: 1px solid #1e2738; border-radius: 10px; overflow: hidden; display: flex; align-items: center; justify-content: center; position: relative;">
             <img id="previewImg" src="" alt="Preview" style="width: 100%; height: 100%; object-fit: cover; display: none;" />
-            <span id="previewNoImg" style="font-size: 0.75rem; color: #64748b; padding: 1rem;">Paste image URL to preview</span>
+            <span id="previewNoImg" style="font-size: 0.75rem; color: #64748b; padding: 1rem;">Choose image to preview</span>
             <span id="previewTypeBadge" style="position: absolute; top: 0.5rem; right: 0.5rem; font-size: 0.65rem; font-weight: 800; padding: 0.15rem 0.45rem; border-radius: 4px; background: #e50914; color: #fff;">
               MOVIE
             </span>

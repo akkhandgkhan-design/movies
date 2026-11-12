@@ -7,8 +7,9 @@ const CONFIG = {
   SUPABASE_URL: '',
   SUPABASE_ANON_KEY: '',
 
-  // Admin Portal Password (Aap isko apni marzi se change kar sakte hain)
-  ADMIN_PASSWORD: 'admin123',
+  // Secure 256-bit Cryptographic Password Hash (SHA-256)
+  // Password is completely encrypted - plaintext is never exposed in code!
+  ADMIN_PASSWORD_HASH: 'feabc0a3a65a9dbd4975490d97f1aea26eeecfdeb61b9ad4df99b0e3309d2f57',
 
   // Site Metadata
   SITE_NAME: 'CineStream',

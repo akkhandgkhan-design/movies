@@ -1,6 +1,6 @@
 // ========================================================
 // CineStream - Admin Control Portal Logic
-// Full Live Sync Engine with Supabase Cloud
+// Cryptographic Authentication & Direct Image Upload Engine
 // ========================================================
 
 // Check if user set custom Supabase keys in browser
@@ -24,7 +24,7 @@ const adminPassInput = document.getElementById('adminPassInput');
 const loginError = document.getElementById('loginError');
 const logoutBtn = document.getElementById('logoutBtn');
 
-// DOM Elements - Supabase Settings Drawer
+// DOM Elements - Supabase Settings
 const dbStatusCard = document.getElementById('dbStatusCard');
 const syncStatusDot = document.getElementById('syncStatusDot');
 const syncStatusText = document.getElementById('syncStatusText');
@@ -42,17 +42,27 @@ const boxMovieType = document.getElementById('boxMovieType');
 const boxSeriesType = document.getElementById('boxSeriesType');
 
 const inputTitle = document.getElementById('inputTitle');
-const inputPoster = document.getElementById('inputPoster');
+
+// File Upload Elements
+const dropzoneBox = document.getElementById('dropzoneBox');
+const posterFileInput = document.getElementById('posterFileInput');
+const dropzonePlaceholder = document.getElementById('dropzonePlaceholder');
+const dropzoneSelected = document.getElementById('dropzoneSelected');
+const dropzoneFileName = document.getElementById('dropzoneFileName');
+
+// Movie Specific Inputs
 const movieLinksGroup = document.getElementById('movieLinksGroup');
 const inputMovieLink1 = document.getElementById('inputMovieLink1');
 const inputMovieLink2 = document.getElementById('inputMovieLink2');
 const selectMovieQuality = document.getElementById('selectMovieQuality');
 const inputMovieSize = document.getElementById('inputMovieSize');
 
+// Series Specific Elements
 const seriesLinksGroup = document.getElementById('seriesLinksGroup');
 const btnAddSeason = document.getElementById('btnAddSeason');
 const seasonsList = document.getElementById('seasonsList');
 
+// Meta Inputs
 const selectCategory = document.getElementById('selectCategory');
 const inputYear = document.getElementById('inputYear');
 const inputRating = document.getElementById('inputRating');
@@ -60,18 +70,19 @@ const inputDescription = document.getElementById('inputDescription');
 const btnPublish = document.getElementById('btnPublish');
 const feedbackMsg = document.getElementById('feedbackMsg');
 
-// DOM Elements - Preview
+// Preview Elements
 const previewImg = document.getElementById('previewImg');
 const previewNoImg = document.getElementById('previewNoImg');
 const previewTypeBadge = document.getElementById('previewTypeBadge');
 const previewTitleText = document.getElementById('previewTitleText');
 const previewMetaText = document.getElementById('previewMetaText');
 
-// DOM Elements - Table
+// Table Elements
 const tableBody = document.getElementById('tableBody');
 const btnReloadTable = document.getElementById('btnReloadTable');
 
 let currentSeasonIndex = 0;
+let uploadedPosterBase64 = null;
 
 // ================= INIT =================
 document.addEventListener('DOMContentLoaded', () => {
@@ -79,6 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setupAuthEvents();
   setupTypeToggle();
   setupSeasonsBuilder();
+  setupFileUpload();
   setupLivePreview();
   setupFormSubmit();
   setupConfigDrawer();
@@ -88,7 +100,13 @@ document.addEventListener('DOMContentLoaded', () => {
   addSeasonCard();
 });
 
-// ================= AUTH =================
+// ================= SECURE SHA-256 HASH VERIFICATION =================
+async function sha256(text) {
+  const enc = new TextEncoder().encode(text);
+  const buf = await crypto.subtle.digest('SHA-256', enc);
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
 function checkAuth() {
   const isAuth = sessionStorage.getItem('cinestream_admin_auth') === 'true';
   if (isAuth) {
@@ -104,17 +122,20 @@ function checkAuth() {
 }
 
 function setupAuthEvents() {
-  loginForm.addEventListener('submit', (e) => {
+  loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const entered = adminPassInput.value.trim();
-    const expected = CONFIG.ADMIN_PASSWORD || 'admin123';
+    const entered = adminPassInput.value;
+    const enteredHash = await sha256(entered);
 
-    if (entered === expected) {
+    // Secure Target Hash for MudassirKhan4488@
+    const targetHash = CONFIG.ADMIN_PASSWORD_HASH || 'feabc0a3a65a9dbd4975490d97f1aea26eeecfdeb61b9ad4df99b0e3309d2f57';
+
+    if (enteredHash === targetHash) {
       sessionStorage.setItem('cinestream_admin_auth', 'true');
       loginError.classList.add('hidden');
       checkAuth();
     } else {
-      loginError.textContent = 'Ghalat password! Default password is "admin123".';
+      loginError.textContent = 'Access Denied! Ghalat password hai.';
       loginError.classList.remove('hidden');
     }
   });
@@ -125,13 +146,91 @@ function setupAuthEvents() {
   });
 }
 
+// ================= DIRECT FILE UPLOAD (NO URL!) =================
+function setupFileUpload() {
+  dropzoneBox.addEventListener('click', () => {
+    posterFileInput.click();
+  });
+
+  // Drag and drop handlers
+  dropzoneBox.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropzoneBox.classList.add('dragover');
+  });
+
+  dropzoneBox.addEventListener('dragleave', () => {
+    dropzoneBox.classList.remove('dragover');
+  });
+
+  dropzoneBox.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropzoneBox.classList.remove('dragover');
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      processSelectedImage(e.dataTransfer.files[0]);
+    }
+  });
+
+  posterFileInput.addEventListener('change', (e) => {
+    if (e.target.files && e.target.files[0]) {
+      processSelectedImage(e.target.files[0]);
+    }
+  });
+}
+
+// Compress & Convert Image to High Quality Base64 Data
+function processSelectedImage(file) {
+  if (!file.type.startsWith('image/')) {
+    alert('Barah-e-karam sirf image file (JPG, PNG, WEBP) select karein!');
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    const img = new Image();
+    img.onload = () => {
+      // Compress to optimal dimensions (max 800px width/height)
+      const canvas = document.createElement('canvas');
+      let width = img.width;
+      let height = img.height;
+      const maxDim = 800;
+
+      if (width > height && width > maxDim) {
+        height = Math.round((height * maxDim) / width);
+        width = maxDim;
+      } else if (height > maxDim) {
+        width = Math.round((width * maxDim) / height);
+        height = maxDim;
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+
+      // 85% high quality JPEG data URL (~50-80 KB)
+      uploadedPosterBase64 = canvas.toDataURL('image/jpeg', 0.85);
+
+      // Update UI Dropzone
+      dropzonePlaceholder.classList.add('hidden');
+      dropzoneSelected.classList.remove('hidden');
+      dropzoneFileName.textContent = file.name;
+
+      // Update Live Preview
+      previewImg.src = uploadedPosterBase64;
+      previewImg.style.display = 'block';
+      previewNoImg.style.display = 'none';
+    };
+    img.src = event.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
 // ================= CONFIG DRAWER =================
 function setupConfigDrawer() {
   toggleConfigBtn.addEventListener('click', () => {
     configDrawer.classList.toggle('hidden');
   });
 
-  // Pre-fill inputs
   cfgSupabaseUrl.value = localStorage.getItem('cinestream_cfg_supabase_url') || CONFIG.SUPABASE_URL || '';
   cfgSupabaseKey.value = localStorage.getItem('cinestream_cfg_supabase_key') || CONFIG.SUPABASE_ANON_KEY || '';
 
@@ -266,22 +365,6 @@ window.removeSeason = function(idx) {
 
 // ================= LIVE PREVIEW =================
 function setupLivePreview() {
-  inputPoster.addEventListener('input', () => {
-    const url = inputPoster.value.trim();
-    if (url) {
-      previewImg.src = url;
-      previewImg.style.display = 'block';
-      previewNoImg.style.display = 'none';
-      previewImg.onerror = () => {
-        previewImg.style.display = 'none';
-        previewNoImg.style.display = 'block';
-      };
-    } else {
-      previewImg.style.display = 'none';
-      previewNoImg.style.display = 'block';
-    }
-  });
-
   inputTitle.addEventListener('input', () => {
     previewTitleText.textContent = inputTitle.value.trim() || 'Movie Title Preview';
   });
@@ -296,28 +379,32 @@ function updateMetaPreview() {
   previewMetaText.textContent = `${y} • ${c}`;
 }
 
-// ================= SUBMIT =================
+// ================= FORM SUBMISSION =================
 function setupFormSubmit() {
   uploadContentForm.addEventListener('submit', async (e) => {
     e.preventDefault();
 
     const title = inputTitle.value.trim();
-    const poster_url = inputPoster.value.trim();
     const isSeries = radioSeries.checked;
     const category = selectCategory.value;
     const year = inputYear.value.trim() || '2024';
     const rating = inputRating.value.trim() || '8.0';
     const description = inputDescription.value.trim();
 
-    if (!title || !poster_url) {
-      showToast('Title aur Poster URL lazmi hain!', 'error');
+    if (!title) {
+      showToast('Title lazmi likhein!', 'error');
+      return;
+    }
+
+    if (!uploadedPosterBase64) {
+      showToast('Barah-e-karam pehle poster image upload karein!', 'error');
       return;
     }
 
     let payload = {
       id: 'item_' + Date.now(),
       title,
-      poster_url,
+      poster_url: uploadedPosterBase64,
       content_type: isSeries ? 'series' : 'movie',
       category,
       year,
@@ -386,12 +473,10 @@ function setupFormSubmit() {
 
     try {
       if (supabaseClient) {
-        // Save to Supabase Cloud
         const { error } = await supabaseClient.from('movies').insert([payload]);
         if (error) throw error;
         showToast(`🎉 "${title}" Supabase me live save ho gayi!`, 'success');
       } else {
-        // Fallback to local storage
         let localData = [];
         try {
           const s = localStorage.getItem('cinestream_local_content');
@@ -403,13 +488,16 @@ function setupFormSubmit() {
         showToast(`"${title}" upload ho gayi (Local Mode)!`, 'success');
       }
 
-      // Reset form
+      // Reset form & image
       uploadContentForm.reset();
       radioMovie.click();
       seasonsList.innerHTML = '';
       currentSeasonIndex = 0;
       addSeasonCard();
 
+      uploadedPosterBase64 = null;
+      dropzonePlaceholder.classList.remove('hidden');
+      dropzoneSelected.classList.add('hidden');
       previewImg.style.display = 'none';
       previewNoImg.style.display = 'block';
 
