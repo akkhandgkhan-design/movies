@@ -375,8 +375,19 @@ function setupLivePreview() {
 
 function updateMetaPreview() {
   const y = inputYear.value.trim() || '2024';
-  const c = selectCategory.value || 'Action';
+  const c = selectCategory.value || 'Anime';
   previewMetaText.textContent = `${y} • ${c}`;
+
+  if (c === 'Anime') {
+    previewTypeBadge.textContent = '⚡ ANIME';
+    previewTypeBadge.style.background = 'linear-gradient(135deg, #ff007a, #7928ca)';
+  } else if (radioSeries.checked) {
+    previewTypeBadge.textContent = 'SERIES';
+    previewTypeBadge.style.background = '#8b5cf6';
+  } else {
+    previewTypeBadge.textContent = 'MOVIE';
+    previewTypeBadge.style.background = '#e50914';
+  }
 }
 
 // ================= FORM SUBMISSION =================

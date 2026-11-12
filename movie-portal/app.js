@@ -1,10 +1,117 @@
 // ========================================================
-// CineStream - High Performance Public Website Engine
+// CineStream - High Performance Cinema & Anime Engine
 // Connects to Supabase Live Database with Instant Local Fallback
 // ========================================================
 
-// Starter Default Data
+// Starter Default Data (Includes Hollywood, Web Series & Top Anime)
 const STARTER_CONTENT = [
+  {
+    id: 'starter-a1',
+    content_type: 'series',
+    category: 'Anime',
+    title: 'Attack on Titan (Shingeki no Kyojin)',
+    description: 'After his hometown is destroyed and his mother is killed, young Eren Jaeger vows to cleanse the earth of the giant humanoid Titans that have brought humanity to the brink of extinction.',
+    poster_url: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?auto=format&fit=crop&w=800&q=80',
+    quality: '1080p FHD',
+    year: '2013-2023',
+    rating: '9.1',
+    total_seasons: 4,
+    total_episodes: 89,
+    seasons_data: [
+      {
+        season_number: 1,
+        title: 'Season 1',
+        episodes: '25 Episodes (Dual Audio)',
+        quality: '1080p FHD',
+        size: '8.4 GB',
+        download_url: 'https://example.com/download/aot-s1',
+        download_url_backup: ''
+      },
+      {
+        season_number: 2,
+        title: 'Season 2',
+        episodes: '12 Episodes (Dual Audio)',
+        quality: '1080p FHD',
+        size: '4.8 GB',
+        download_url: 'https://example.com/download/aot-s2',
+        download_url_backup: ''
+      },
+      {
+        season_number: 3,
+        title: 'Season 3 (Part 1 & 2)',
+        episodes: '22 Episodes (Dual Audio)',
+        quality: '1080p FHD',
+        size: '9.2 GB',
+        download_url: 'https://example.com/download/aot-s3',
+        download_url_backup: ''
+      },
+      {
+        season_number: 4,
+        title: 'Final Season',
+        episodes: '30 Episodes (Dual Audio)',
+        quality: '1080p FHD',
+        size: '14.5 GB',
+        download_url: 'https://example.com/download/aot-final',
+        download_url_backup: ''
+      }
+    ]
+  },
+  {
+    id: 'starter-a2',
+    content_type: 'series',
+    category: 'Anime',
+    title: 'Demon Slayer: Kimetsu no Yaiba',
+    description: 'A family is attacked by demons and only two members survive - Tanjiro and his sister Nezuko, who is turning into a demon herself. Tanjiro sets out on a dangerous quest to avenge his family and cure his sister.',
+    poster_url: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?auto=format&fit=crop&w=800&q=80',
+    quality: '4K UHD',
+    year: '2019-2024',
+    rating: '8.7',
+    total_seasons: 3,
+    total_episodes: 55,
+    seasons_data: [
+      {
+        season_number: 1,
+        title: 'Season 1 (Tanjiro Kamado Arc)',
+        episodes: '26 Episodes',
+        quality: '1080p FHD',
+        size: '7.8 GB',
+        download_url: 'https://example.com/download/demon-slayer-s1',
+        download_url_backup: ''
+      },
+      {
+        season_number: 2,
+        title: 'Season 2 (Entertainment District)',
+        episodes: '18 Episodes',
+        quality: '4K UHD',
+        size: '8.9 GB',
+        download_url: 'https://example.com/download/demon-slayer-s2',
+        download_url_backup: ''
+      },
+      {
+        season_number: 3,
+        title: 'Season 3 (Swordsmith Village)',
+        episodes: '11 Episodes',
+        quality: '4K UHD',
+        size: '9.4 GB',
+        download_url: 'https://example.com/download/demon-slayer-s3',
+        download_url_backup: ''
+      }
+    ]
+  },
+  {
+    id: 'starter-a3',
+    content_type: 'movie',
+    category: 'Anime',
+    title: 'Your Name (Kimi no Na wa)',
+    description: 'Two teenagers share a profound, magical connection upon discovering they are swapping bodies. Things manage to become even more complicated when the boy and girl decide to meet in person.',
+    poster_url: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=800&q=80',
+    download_url: 'https://example.com/download/your-name-4k',
+    download_url_backup: 'https://example.com/download/your-name-mirror',
+    quality: '4K UHD',
+    year: '2016',
+    rating: '8.4',
+    file_size: '3.2 GB'
+  },
   {
     id: 'starter-1',
     content_type: 'movie',
@@ -38,7 +145,7 @@ const STARTER_CONTENT = [
         quality: '1080p',
         size: '5.2 GB',
         download_url: 'https://example.com/download/stranger-things-s1',
-        download_url_backup: 'https://example.com/download/stranger-things-s1-mirror'
+        download_url_backup: ''
       },
       {
         season_number: 2,
@@ -152,24 +259,12 @@ const STARTER_CONTENT = [
     quality: '4K UHD',
     year: '2014',
     rating: '8.7'
-  },
-  {
-    id: 'starter-4',
-    content_type: 'movie',
-    title: 'Spider-Man: Across the Spider-Verse',
-    description: 'Miles Morales catapults across the Multiverse, where he encounters a team of Spider-People charged with protecting its very existence.',
-    poster_url: 'https://images.unsplash.com/photo-1635805737707-575885ab0820?auto=format&fit=crop&w=800&q=80',
-    download_url: 'https://example.com/download/spiderman',
-    category: 'Animation',
-    quality: '1080p',
-    year: '2023',
-    rating: '8.7'
   }
 ];
 
 // App State
 let allItems = [];
-let currentType = 'ALL';     // 'ALL', 'movie', 'series'
+let currentType = 'ALL';     // 'ALL', 'movie', 'series', 'anime'
 let currentGenre = 'ALL';
 let currentQuality = 'ALL';
 let currentSearch = '';
@@ -186,11 +281,13 @@ const qualitySelect = document.getElementById('qualitySelect');
 const navAllBtn = document.getElementById('navAllBtn');
 const navMoviesBtn = document.getElementById('navMoviesBtn');
 const navSeriesBtn = document.getElementById('navSeriesBtn');
+const navAnimeBtn = document.getElementById('navAnimeBtn');
 
 // Type tab buttons
 const typeTabAll = document.getElementById('typeTabAll');
 const typeTabMovie = document.getElementById('typeTabMovie');
 const typeTabSeries = document.getElementById('typeTabSeries');
+const typeTabAnime = document.getElementById('typeTabAnime');
 
 // Modal Elements
 const detailModal = document.getElementById('detailModal');
@@ -228,17 +325,20 @@ function setupFilterEvents() {
   });
 
   // Type Switcher
-  const typeButtons = [typeTabAll, typeTabMovie, typeTabSeries];
+  const typeButtons = [typeTabAll, typeTabMovie, typeTabSeries, typeTabAnime];
   typeButtons.forEach(btn => {
+    if (!btn) return;
     btn.addEventListener('click', () => {
       typeButtons.forEach(b => {
-        b.classList.remove('active', 'series-active');
+        b && b.classList.remove('active', 'series-active', 'anime-active');
       });
       btn.classList.add('active');
       
       currentType = btn.getAttribute('data-type');
       if (currentType === 'series') {
         btn.classList.add('series-active');
+      } else if (currentType === 'anime') {
+        btn.classList.add('anime-active');
       }
       
       updateNavHighlight(currentType);
@@ -265,6 +365,12 @@ function setupFilterEvents() {
       typeTabSeries.click();
     });
   }
+  if (navAnimeBtn) {
+    navAnimeBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (typeTabAnime) typeTabAnime.click();
+    });
+  }
 
   // Genre Pills
   const genrePills = document.querySelectorAll('.genre-pill');
@@ -285,9 +391,10 @@ function setupFilterEvents() {
 }
 
 function updateNavHighlight(type) {
-  [navAllBtn, navMoviesBtn, navSeriesBtn].forEach(n => n && n.classList.remove('active'));
+  [navAllBtn, navMoviesBtn, navSeriesBtn, navAnimeBtn].forEach(n => n && n.classList.remove('active'));
   if (type === 'movie' && navMoviesBtn) navMoviesBtn.classList.add('active');
   else if (type === 'series' && navSeriesBtn) navSeriesBtn.classList.add('active');
+  else if (type === 'anime' && navAnimeBtn) navAnimeBtn.classList.add('active');
   else if (navAllBtn) navAllBtn.classList.add('active');
 }
 
@@ -317,9 +424,9 @@ async function fetchContent() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      allItems = data || [];
+      allItems = (data && data.length > 0) ? data : STARTER_CONTENT;
     } catch (err) {
-      console.warn('Supabase fetch error, fallback to cache:', err);
+      console.warn('Supabase fetch error, fallback to starter data:', err);
       loadFallbackData();
     }
   } else {
@@ -349,10 +456,16 @@ function loadFallbackData() {
 function filterAndRender() {
   const filtered = allItems.filter(item => {
     const isSeries = item.content_type === 'series';
+    const isAnime = (item.category && item.category.toLowerCase() === 'anime') || item.content_type === 'anime';
 
     // Type filter
-    if (currentType === 'movie' && isSeries) return false;
-    if (currentType === 'series' && !isSeries) return false;
+    if (currentType === 'movie') {
+      if (isSeries || isAnime) return false;
+    } else if (currentType === 'series') {
+      if (!isSeries || isAnime) return false;
+    } else if (currentType === 'anime') {
+      if (!isAnime) return false;
+    }
 
     // Search filter
     if (currentSearch) {
@@ -403,6 +516,7 @@ function filterAndRender() {
 // Generate Card HTML
 function generateCardHTML(item) {
   const isSeries = item.content_type === 'series';
+  const isAnime = (item.category && item.category.toLowerCase() === 'anime') || item.content_type === 'anime';
   const poster = item.poster_url || 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=600&q=80';
   const rating = item.rating || '8.0';
   const year = item.year || '2024';
@@ -412,11 +526,31 @@ function generateCardHTML(item) {
   let seasonTag = '';
   if (isSeries) {
     const sCount = item.total_seasons || (item.seasons_data ? item.seasons_data.length : 1);
-    seasonTag = `<div class="card-seasons-badge">${sCount} ${sCount === 1 ? 'Season' : 'Seasons'} Pack</div>`;
+    seasonTag = `<div class="card-seasons-badge ${isAnime ? 'badge-anime-seasons' : ''}">${sCount} ${sCount === 1 ? 'Season' : 'Seasons'} Pack</div>`;
+  }
+
+  let cardTypeClass = '';
+  let badgeClass = 'badge-movie-red';
+  let badgeLabel = quality;
+  let btnClass = '';
+  let btnLabel = 'Download Movie';
+
+  if (isAnime) {
+    cardTypeClass = 'card-anime';
+    badgeClass = 'badge-anime-pink';
+    badgeLabel = '⚡ ANIME';
+    btnClass = 'anime-btn';
+    btnLabel = isSeries ? 'View Seasons' : 'Download Anime';
+  } else if (isSeries) {
+    cardTypeClass = 'card-series';
+    badgeClass = 'badge-series-purple';
+    badgeLabel = 'SERIES';
+    btnClass = 'series-btn';
+    btnLabel = 'View Seasons';
   }
 
   return `
-    <div class="media-card" data-id="${item.id}">
+    <div class="media-card ${cardTypeClass}" data-id="${item.id}">
       <div class="poster-holder">
         <img 
           src="${escapeHTML(poster)}" 
@@ -431,16 +565,16 @@ function generateCardHTML(item) {
         </div>
 
         <!-- Type / Quality Badge -->
-        <div class="card-badge-type ${isSeries ? 'badge-series-purple' : 'badge-movie-red'}">
-          ${isSeries ? 'SERIES' : escapeHTML(quality)}
+        <div class="card-badge-type ${badgeClass}">
+          ${escapeHTML(badgeLabel)}
         </div>
 
         ${seasonTag}
 
         <!-- Hover Overlay -->
         <div class="card-hover-overlay">
-          <div class="card-hover-btn ${isSeries ? 'series-btn' : ''}">
-            <span>${isSeries ? 'View Seasons' : 'Download Movie'}</span>
+          <div class="card-hover-btn ${btnClass}">
+            <span>${btnLabel}</span>
           </div>
         </div>
       </div>
@@ -459,6 +593,7 @@ function generateCardHTML(item) {
 // ================= MODAL LOGIC =================
 function openModal(item) {
   const isSeries = item.content_type === 'series';
+  const isAnime = (item.category && item.category.toLowerCase() === 'anime') || item.content_type === 'anime';
 
   modalPoster.src = item.poster_url || '';
   modalTitle.textContent = item.title || 'Untitled';
@@ -468,18 +603,24 @@ function openModal(item) {
   modalQuality.textContent = item.quality || '1080p';
   modalRating.innerHTML = `★ <span>${item.rating || '8.0'}</span>`;
 
-  if (isSeries) {
+  if (isAnime) {
+    modalTypeBadge.textContent = '⚡ ANIME';
+    modalTypeBadge.style.background = 'linear-gradient(135deg, #ff007a, #7928ca)';
+  } else if (isSeries) {
     modalTypeBadge.textContent = 'WEB SERIES';
     modalTypeBadge.style.background = '#8b5cf6';
-
-    modalMovieSection.classList.add('hidden');
-    modalSeriesSection.classList.remove('hidden');
-
-    renderSeriesModalSeasons(item);
   } else {
     modalTypeBadge.textContent = 'MOVIE';
     modalTypeBadge.style.background = '#e50914';
+  }
 
+  // Check if it has multi-season downloads (like TV Anime or Series)
+  if (isSeries && item.seasons_data && (Array.isArray(item.seasons_data) || typeof item.seasons_data === 'string')) {
+    modalMovieSection.classList.add('hidden');
+    modalSeriesSection.classList.remove('hidden');
+
+    renderSeriesModalSeasons(item, isAnime);
+  } else {
     modalSeriesSection.classList.add('hidden');
     modalMovieSection.classList.remove('hidden');
 
@@ -497,7 +638,7 @@ function openModal(item) {
   document.body.style.overflow = 'hidden';
 }
 
-function renderSeriesModalSeasons(series) {
+function renderSeriesModalSeasons(series, isAnime = false) {
   let seasons = series.seasons_data;
 
   if (typeof seasons === 'string') {
@@ -525,9 +666,9 @@ function renderSeriesModalSeasons(series) {
     const sBackup = s.download_url_backup || '';
 
     return `
-      <div class="season-download-card">
+      <div class="season-download-card ${isAnime ? 'anime-season' : ''}">
         <div class="season-info-left">
-          <div class="season-num-tag">${idx + 1}</div>
+          <div class="season-num-tag ${isAnime ? 'anime-tag' : ''}">${idx + 1}</div>
           <div>
             <div class="season-title-text">${escapeHTML(sTitle)}</div>
             <div class="season-meta-sub">${escapeHTML(sEps)} ${escapeHTML(sSize)} • ${escapeHTML(sQuality)}</div>
@@ -535,7 +676,7 @@ function renderSeriesModalSeasons(series) {
         </div>
 
         <div class="season-actions-right">
-          <a href="${escapeHTML(sUrl)}" target="_blank" rel="noopener noreferrer" class="btn-season-get">
+          <a href="${escapeHTML(sUrl)}" target="_blank" rel="noopener noreferrer" class="btn-season-get ${isAnime ? 'anime-download-btn' : ''}">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
               <polyline points="7 10 12 15 17 10"></polyline>
